@@ -8,23 +8,23 @@ import json
 import pandas as pd
 import branca
 import base64
+from io import BytesIO
 
 # Fetch API key and URLs from Streamlit secrets
 MAPBOX_API_KEY = st.secrets["mapbox"]["api_key"]
-PNG_WIKI_COGEN = st.secrets["g_drive"]["cogeneration_png"]
-PNG_WIKI_COGEN = st.secrets["g_drive"]["cogeneration_png"]
-JPG_EDISON = st.secrets["g_drive"]["edison_plant_jpg"]
-JPG_GRAYS_FERRY = st.secrets["g_drive"]["grays_ferry_jpg"]
+PNG_WIKI_COGEN = st.secrets["aws"]["cogeneration_png"]
+JPG_EDISON = st.secrets["aws"]["edison_plant_jpg"]
+JPG_GRAYS_FERRY = st.secrets["aws"]["grays_ferry_jpg"]
 
-GEOJSON_STEAM_LOOP = st.secrets["g_drive"]["steamloop_geojson"]
-GEOJSON_PHL_BLDGS = st.secrets["g_drive"]["phl_bldg_geojson"]
-GEOJSON_PHL_NBRHOODS = st.secrets["g_drive"]["phl_nbrhoods_geojson"]
+GEOJSON_STEAM_LOOP = st.secrets["aws"]["steamloop_geojson"]
+GEOJSON_PHL_BLDGS = st.secrets["aws"]["phl_bldg_geojson"]
+GEOJSON_PHL_NBRHOODS = st.secrets["aws"]["phl_nbrhoods_geojson"]
 
 def main():
     # Fetch GeoJSON data with geopandas
-    steamloop_gdf = gpd.read_file(GEOJSON_STEAM_LOOP)
-    bldg_gdf = gpd.read_file(GEOJSON_PHL_BLDGS)
-    neighborhoods_gdf = gpd.read_file(GEOJSON_PHL_NBRHOODS)
+    steamloop_gdf = read_geojson_from_url(GEOJSON_STEAM_LOOP)
+    bldg_gdf = read_geojson_from_url(GEOJSON_PHL_BLDGS)
+    neighborhoods_gdf = read_geojson_from_url(GEOJSON_PHL_NBRHOODS)
 
     # Make sure both GeoDataFrames are using the same CRS
     neighborhoods_gdf = neighborhoods_gdf.to_crs(steamloop_gdf.crs)
@@ -84,6 +84,15 @@ def main():
 
 # -----\\ HELPER FUNCTIONS
 
+def read_geojson_from_url(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+    response = requests.get(url, headers=headers)
+    f = BytesIO(response.content)
+    gdf = gpd.read_file(f)
+    return gdf
+
 def add_custom_markers(folium_map, marker_data):
     ''' Adds Folium markers to the map with custom icons and popups. 
     '''
@@ -122,7 +131,7 @@ def display_disclaimer_and_attr():
         """)
     
     st.markdown("""
-    Created by [Keon Monroe](mailto:keon.monroe@gmail.com). [GitHub](https://github.com/kdmonroe/phl_steamloop_streamlit)
+    Created by Keon Monroe 
     """)
 
 def display_legend():
@@ -159,17 +168,25 @@ def add_steam_loop_layer(folium_map, steamloop_gdf):
     return folium_map
 
 def add_phl_bldg_layer(folium_map, bldg_gdf):
-    """ Displays the building footprints on the Folium map.
+    """Displays the building footprints on the Folium map.
         Uses geodataframe of the building footprints and Folium map object.
     """
+    # Convert GeoDataFrame to a dictionary and replace Timestamps with their string representation
+    bldg_dict = bldg_gdf.__geo_interface__
+    for feature in bldg_dict['features']:
+        properties = feature['properties']
+        for key, value in properties.items():
+            if isinstance(value, pd.Timestamp):
+                properties[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+
     phl_bldg = folium.GeoJson(
-        bldg_gdf,
+        bldg_dict,
         name='Building Footprints (1000 m from steam loop)',
         style_function=lambda feature: {
             'fillColor': '#008000',
             'color': 'transparent',
             'weight': 1,
-            'fillOpacity': 0.5,
+            'fillOpacity': 0,
         }
     ).add_to(folium_map)
     return folium_map
