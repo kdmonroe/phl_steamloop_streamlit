@@ -94,8 +94,11 @@ def main():
     
 
 # -----\\ HELPER FUNCTIONS
+
+@st.cache_data(ttl=None, persist=None)
 def read_geojson_from_url(url):
     """ Reads GeoJSON data from a URL and returns a GeoDataFrame.
+        Uses caching to avoid re-downloading the data.
     """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
