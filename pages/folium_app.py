@@ -8,6 +8,7 @@ import json
 import pandas as pd
 import branca
 import base64
+import numpy as np
 from io import BytesIO
 
 # Fetch API key and URLs from Streamlit secrets
@@ -42,9 +43,13 @@ def main():
     )
     tile_layer.add_to(m)
 
-    st.header("Philadelphia Steam Loop Map")
-    display_intersecting_neighborhoods(m, neighborhoods_gdf)
-
+    st.markdown("""
+                # Philadelphia Steam Loop Map
+                The city's district heating system produces steam at a central power plant and delivers it by underground pipes to about 500 buildings. This map shows the steam loop and nearby buildings that are likely connected to it.
+                """)
+    
+    folium_map, colormap = generate_folium_map(m, neighborhoods_gdf)
+    
     # Add markers
     marker_data = [
         {
@@ -73,9 +78,15 @@ def main():
     # Display the map
     folium_static(m)
     
-    display_legend()
+    # Define the marker image URL
+    marker_image_url = "http://icons.iconarchive.com/icons/paomedia/small-n-flat/1024/map-marker-icon.png"
 
+    # Display the legend
+    display_legend(marker_image_url)
+    
     display_building_stats(bldg_gdf)     
+    
+    display_bldgs_nearby_expander(neighborhoods_gdf, colormap)
     
     add_source_info_expanders()
     
@@ -84,20 +95,29 @@ def main():
 
 # -----\\ HELPER FUNCTIONS
 
+@st.cache_data(ttl=None, persist=None)
 def read_geojson_from_url(url):
+    """ Reads GeoJSON data from a URL and returns a GeoDataFrame.
+        Uses caching to avoid re-downloading the data.
+    """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
     response = requests.get(url, headers=headers)
     f = BytesIO(response.content)
     gdf = gpd.read_file(f)
+
+    # Convert all datetime columns to string
+    datetime_cols = gdf.select_dtypes(include=[np.datetime64]).columns.tolist()
+    for col in datetime_cols:
+        gdf[col] = gdf[col].astype(str)
+    
     return gdf
 
 def add_custom_markers(folium_map, marker_data):
     ''' Adds Folium markers to the map with custom icons and popups. 
     '''
     for marker in marker_data:
-        # Fetch image from Google Drive
         image = requests.get(marker["image_url"]).content
         encoded = base64.b64encode(image).decode()
 
@@ -134,22 +154,28 @@ def display_disclaimer_and_attr():
     Created by Keon Monroe 
     """)
 
-def display_legend():
-    """ Displays Streamlit expander with legend for the map.
-        Matches the colors of the Folium layers.
+def display_legend(marker_image_url):
+    """ 
+    Displays the legend for the map with the specified marker image.
     """
+    # Fetch marker image and encode in base64
+    image = requests.get(marker_image_url).content
+    encoded_marker_image = base64.b64encode(image).decode()
+    
     # Legend expander for the map
     with st.expander("🎨 Legend", expanded=True):
-        st.markdown("""
+        st.markdown(f"""
             <div style="font-size:16px;">
                 <ul style="list-style: none;">
                     <li><span style="color: #4A90E2;">&#11044;</span> - Philadelphia Steam Loop</li>
                     <li><span style="color: #008000;">&#11044;</span> - Building Footprints</li>
                     <li><span style="color: #FF0000;">&#11044;</span> - Philadelphia Neighborhoods (High # of Buildings)</li>
                     <li><span style="color: #FF8C00;">&#11044;</span> - Philadelphia Neighborhoods (Low # of Buildings)</li>
+                    <li><img src="data:image/png;base64,{encoded_marker_image}" style="width:14px;height:15px;"> - Cogeneration Plant</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
+
 
 def add_steam_loop_layer(folium_map, steamloop_gdf):
     """ Displays the steam loop on the Folium map.
@@ -168,54 +194,35 @@ def add_steam_loop_layer(folium_map, steamloop_gdf):
     return folium_map
 
 def add_phl_bldg_layer(folium_map, bldg_gdf):
-    """Displays the building footprints on the Folium map.
+    """ Displays the building footprints on the Folium map.
         Uses geodataframe of the building footprints and Folium map object.
     """
-    # Convert GeoDataFrame to a dictionary and replace Timestamps with their string representation
-    bldg_dict = bldg_gdf.__geo_interface__
-    for feature in bldg_dict['features']:
-        properties = feature['properties']
-        for key, value in properties.items():
-            if isinstance(value, pd.Timestamp):
-                properties[key] = value.strftime('%Y-%m-%d %H:%M:%S')
-
+    
     phl_bldg = folium.GeoJson(
-        bldg_dict,
+        bldg_gdf,
         name='Building Footprints (1000 m from steam loop)',
         style_function=lambda feature: {
             'fillColor': '#008000',
             'color': 'transparent',
             'weight': 1,
-            'fillOpacity': 0,
+            'fillOpacity': 0.5,
         }
     ).add_to(folium_map)
     return folium_map
 
-def display_intersecting_neighborhoods(folium_map, neighborhoods_gdf):
-    """ Displays the intersecting neighborhoods on the Folium map as a choropleth.
-        Uses geodataframe of the intersecting neighborhoods and Folium map object.
-        Streamlit Expander - Neighborhood Statistics displays neighbrhood name and # of bldgs in the Folium popup. 
-    """
+def generate_folium_map(folium_map, neighborhoods_gdf):
     # Create a colormap
     max_count = neighborhoods_gdf['Join_Count'].max()
-    colormap = branca.colormap.linear.OrRd_07.scale(0, max_count) # type: ignore
-
-    # get total number where "Join_Count" > 0
-    num_intersecting = len(neighborhoods_gdf[neighborhoods_gdf['Join_Count'] > 0])
-    
-    total_neighborhoods = len(neighborhoods_gdf)
-    
-    # First, sort the neighborhoods by the number of buildings
-    sorted_neighborhoods = neighborhoods_gdf.sort_values(by='Join_Count', ascending=False)
+    colormap = branca.colormap.linear.OrRd_07.scale(0, max_count)
 
     # Apply the colormap to the neighborhoods GeoDataFrame
     neighborhoods_gdf['color'] = neighborhoods_gdf['Join_Count'].map(lambda count: colormap(count) if count > 0 else '#000000')
-
+    
     # Convert timestamp columns to string
     for col in neighborhoods_gdf.columns:
         if isinstance(neighborhoods_gdf[col].dtype, pd.core.dtypes.dtypes.DatetimeTZDtype):
             neighborhoods_gdf[col] = neighborhoods_gdf[col].astype(str)
-    
+
     # Convert the GeoPandas DataFrame to GeoJSON
     neighborhoods_data = json.loads(neighborhoods_gdf.to_json())
 
@@ -238,6 +245,19 @@ def display_intersecting_neighborhoods(folium_map, neighborhoods_gdf):
     # Add the colormap to the map
     colormap.add_to(folium_map)
 
+    return folium_map, colormap
+
+
+def display_bldgs_nearby_expander(neighborhoods_gdf, colormap):
+
+    # get total number where "Join_Count" > 0
+    num_intersecting = len(neighborhoods_gdf[neighborhoods_gdf['Join_Count'] > 0])
+    
+    total_neighborhoods = len(neighborhoods_gdf)
+    
+    # First, sort the neighborhoods by the number of buildings
+    sorted_neighborhoods = neighborhoods_gdf.sort_values(by='Join_Count', ascending=False)
+
     # filter out neighborhoods with 0 buildings
     sorted_neighborhoods = sorted_neighborhoods[sorted_neighborhoods['Join_Count'] > 0]
     
@@ -247,10 +267,10 @@ def display_intersecting_neighborhoods(folium_map, neighborhoods_gdf):
         for neighborhood, count in zip(sorted_neighborhoods['listname'], sorted_neighborhoods['Join_Count'])
     ])
 
-    with st.expander("🏠 Neighborhood Statistics", expanded=False):
+    with st.expander("🏠 Nearby Buildings Statistics", expanded=False):
         st.markdown(f"""
             <div style="font-size:24px; font-weight: bold;">
-                Buildings in <span style="color: #FFA500;">{num_intersecting}</span> (out of <span style="color :#FF8C00;">{total_neighborhoods}</span>) neighborhoods are nearby the Philadelphia Steam Loop.
+                An estimated buildings in <span style="color: #FFA500;">{num_intersecting}</span> (out of <span style="color :#FF8C00;">{total_neighborhoods}</span>) neighborhoods are nearby the Philadelphia Steam Loop.
             </div>
             <div style="font-size:18px;">
                 <ol>
