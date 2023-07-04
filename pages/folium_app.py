@@ -21,7 +21,20 @@ GEOJSON_STEAM_LOOP = st.secrets["aws"]["steamloop_geojson"]
 GEOJSON_PHL_BLDGS = st.secrets["aws"]["phl_bldg_geojson"]
 GEOJSON_PHL_NBRHOODS = st.secrets["aws"]["phl_nbrhoods_geojson"]
 
+
 def main():
+    """
+    folium_app.py
+    Entry point for the Streamlit application. This function fetches GeoJSON data for the Philadelphia steam loop, 
+    nearby buildings, and neighborhoods. The function then creates a Streamlit Folium map with this data, displaying a satellite 
+    view, the steam loop, buildings, neighborhoods, and custom markers for cogeneration plants. 
+
+    The map also features a legend and layer control, and statistics about the buildings and neighborhoods are displayed 
+    below the map.
+
+    The application includes expanders for source information and a disclaimer.
+    """
+
     # Fetch GeoJSON data with geopandas
     steamloop_gdf = read_geojson_from_url(GEOJSON_STEAM_LOOP)
     bldg_gdf = read_geojson_from_url(GEOJSON_PHL_BLDGS)
@@ -44,10 +57,10 @@ def main():
     tile_layer.add_to(m)
 
     st.markdown("""
-                # Philadelphia Steam Loop Map
-                The city's district heating system produces steam at a central power plant and delivers it by underground pipes to about 500 buildings. This map shows the steam loop and nearby buildings that are likely connected to it.
-                """)
-    
+        # Map of Philadelphia's Steam Loop
+        Philadelphia's district heating system centrally generates steam, distributing it to roughly 500 buildings via a network of underground pipes. The map displayed below provides a visual representation of this steam loop, along with neighborhoods and buildings in proximity, which are likely connected to the system. Cogeneration plants (the primary sources of steam for the loop) are also displayed on the map.
+    """)
+
     folium_map, colormap = generate_folium_map(m, neighborhoods_gdf)
     
     # Add markers
@@ -70,10 +83,10 @@ def main():
     m = add_steam_loop_layer(m, steamloop_gdf)
     m = add_phl_bldg_layer(m, bldg_gdf)
 
-    m = add_custom_markers(m, marker_data)
+    m = add_custom_markers(m, marker_data, "Cogeneration Plants")
 
     # Add layer control to the map
-    folium.LayerControl(collapsed=True).add_to(m)
+    folium.LayerControl(collapsed=False).add_to(m)
     
     # Display the map
     folium_static(m)
@@ -114,9 +127,12 @@ def read_geojson_from_url(url):
     
     return gdf
 
-def add_custom_markers(folium_map, marker_data):
+def add_custom_markers(folium_map, marker_data, marker_name="Custom Markers"):
     ''' Adds Folium markers to the map with custom icons and popups. 
     '''
+    # Create a FeatureGroup for the markers
+    marker_group = folium.FeatureGroup(name=marker_name)
+    
     for marker in marker_data:
         image = requests.get(marker["image_url"]).content
         encoded = base64.b64encode(image).decode()
@@ -139,20 +155,35 @@ def add_custom_markers(folium_map, marker_data):
             location=[marker["lat"], marker["lon"]],
             popup=folium.Popup(iframe, max_width=img_width+20),
             icon=icon
-        ).add_to(folium_map)
+        ).add_to(marker_group)
+    
+    # Add marker group to the map
+    marker_group.add_to(folium_map)
+    
     return folium_map
 
 
 def display_disclaimer_and_attr():
-    # Data usgae disclaimer
+    """ 
+    Displays the disclaimer and attribution for the map.
+    Uses HTML to style the text and Streamlit's expander widget to hide the section by default.
+    """
+
     with st.expander("Disclaimer", expanded=True):
         st.markdown("""
-        This map is intended to provide a general overview of the steam loop and should not be utilized for engineering or precise planning purposes. Neighboorhoold building counts are for analysis purposes only and does not infer active connections to the Vicinity steam loop. Relying on this map for other than general informational purposes could lead to inaccuracies. 
-        """)
-    
-    st.markdown("""
-    Created by Keon Monroe 
-    """)
+        <style>
+            .disclaimer {
+                font-size: 0.9em;
+            }
+            .attribution {
+                font-size: 0.8em;
+                color: #808080;
+            }
+        </style>
+        <p class='disclaimer'>This map is designed for educational and informational purposes and is not suitable for precise planning or engineering purposes. The counts of buildings within neighborhoods are demonstrated for analytical purposes and do not confirm active connections to the steam loop. Using this map for any purpose beyond obtaining general information may result in inaccuracies.</p>
+        """, unsafe_allow_html=True)
+
+
 
 def display_legend(marker_image_url):
     """ 
@@ -171,7 +202,7 @@ def display_legend(marker_image_url):
                     <li><span style="color: #008000;">&#11044;</span> - Building Footprints</li>
                     <li><span style="color: #FF0000;">&#11044;</span> - Philadelphia Neighborhoods (High # of Buildings)</li>
                     <li><span style="color: #FF8C00;">&#11044;</span> - Philadelphia Neighborhoods (Low # of Buildings)</li>
-                    <li><img src="data:image/png;base64,{encoded_marker_image}" style="width:14px;height:15px;"> - Cogeneration Plant</li>
+                    <li><img src="data:image/png;base64,{encoded_marker_image}" style="width:14px;height:15px;"> - Cogeneration Plant (Click to View) </li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
@@ -211,6 +242,8 @@ def add_phl_bldg_layer(folium_map, bldg_gdf):
     return folium_map
 
 def generate_folium_map(folium_map, neighborhoods_gdf):
+    """ Generates the Folium map with the steam loop, building footprints, and neighborhood polygons.
+    """
     # Create a colormap
     max_count = neighborhoods_gdf['Join_Count'].max()
     colormap = branca.colormap.linear.OrRd_07.scale(0, max_count)
@@ -270,7 +303,7 @@ def display_bldgs_nearby_expander(neighborhoods_gdf, colormap):
     with st.expander("🏠 Nearby Buildings Statistics", expanded=False):
         st.markdown(f"""
             <div style="font-size:24px; font-weight: bold;">
-                An estimated buildings in <span style="color: #FFA500;">{num_intersecting}</span> (out of <span style="color :#FF8C00;">{total_neighborhoods}</span>) neighborhoods are nearby the Philadelphia Steam Loop.
+                Roughly <span style="color: #FFA500;">{num_intersecting}</span> neighborhoods (from a total of <span style="color :#FF8C00;">{total_neighborhoods}</span>) are close to the Philadelphia Steam Loop. Here's how many buildings they have:
             </div>
             <div style="font-size:18px;">
                 <ol>
@@ -278,7 +311,6 @@ def display_bldgs_nearby_expander(neighborhoods_gdf, colormap):
                 </ol>
             </div>
         """, unsafe_allow_html=True)
-
 
 def display_building_stats(gdf):
     ''' Display building statistics in a Streamlit expander
@@ -295,10 +327,18 @@ def display_building_stats(gdf):
                 .buildings {
                     color: #FFC966;
                 }
+                .estimate {
+                    font-size: 0.8em;
+                }
             </style>
             """, unsafe_allow_html=True)
         # Using the custom CSS classes
-        st.markdown(f"<p>There are approximately <span class='buildings'>{total} buildings </span><span class='total'>within 1000m</span> (about {miles:.2f}</span> miles) <span class='total'>of the steam loop.</span></p>", unsafe_allow_html=True)
+        st.markdown(f"""
+                    <p>There are approximately <span class='buildings'>{total} buildings </span><span class='total'> within 1000m</span> (about {miles:.2f}</span> miles) <span class='total'> of the steam loop.</p>
+                    
+                    <h4 class='estimate'>Estimated using Microsoft Building Footprints dataset and georeferenced steam loop data.</h4>
+                    """
+                    , unsafe_allow_html=True)
 
 
 def add_source_info_expanders():
@@ -318,6 +358,7 @@ def add_source_info_expanders():
         
         ##### More on Philadelphia's Steam Loop
         -  [Vicinity Energy (Owner)](https://www.vicinityenergy.us/locations/philadelphia)
+        -  [How A Combined Cycle Power Plant Works | Gas Power Generation](https://www.youtube.com/watch?v=KVjtFXWe9Eo&t=12s)
         -  [Could Philly’s steam system provide a climate solution? PGW says no - WHYY article](https://whyy.org/articles/philadelphia-pgw-vicinity-customers-gas-steam-loop-climate-change/) 
         -  [Willow Street Steam Generation Plant - Abandoned America](https://www.abandonedamerica.us/willow-street-steam-plant)
         -  [Center City steam loop a ‘diamond in the rough,’ - Philadelphia Inquirer article](https://www.inquirer.com/business/philadelphia-steam-plant-vicinity-veolia-dicroce-20200204.html)
@@ -327,22 +368,33 @@ def add_source_info_expanders():
         st.image(PNG_WIKI_COGEN, use_column_width=True) # type: ignore
         st.markdown("<div style='text-align: center; color: grey; font-size: small;'>Image Source: <a href='https://en.wikipedia.org/wiki/Cogeneration'>Wikipedia Cogeneration</a></div>", unsafe_allow_html=True)
 
-    # Create a collapsible expander for the source information
     with st.expander("📜 Source Information", expanded=False):
         st.markdown("""
-            #### The steam loop was georeferenced from two main sources: 
-            -  [Vicinity Energy (Informational Brochure)](https://www.vicinityenergy.us/brochures/delivering-reliable-green-energy-to-philadelphia) 
-            -  [Old Trigen Steam Distribution Map](https://hiddencityphila.org/2012/02/all-steamed-up/)
-           
-           #### Building footprints 
-            - [2021 Micrsoft Building Footprints](https://github.com/Microsoft/USBuildingFootprints)
+            The steam loop was georeferenced from two main sources: 
+            - [Vicinity Energy (Informational Brochure)](https://www.vicinityenergy.us/brochures/delivering-reliable-green-energy-to-philadelphia) 
+            - [Old Trigen Steam Distribution Map](https://hiddencityphila.org/2012/02/all-steamed-up/)
+        
+            #### Building Footprints + Neighborhoods
+            - [Building Footprints, 2021 Microsoft](https://github.com/Microsoft/USBuildingFootprints)
+            - [Philadelphia Neighborhoods, Azavea](https://github.com/azavea/geo-data/blob/master/Neighborhoods_Philadelphia/Neighborhoods_Philadelphia.geojson)
             
-           #### Limitations
-            Buildings were filtered to only include those in Philadelphia County and within 1000m of the steam loop. The counts are estimated (see Disclaimer). It is unknown to what extent buildings may draw from the steam loop (perhaps more or less than the chosen distance).</b>According to a 2020 Inquirer article, "The Center City district heating system produces steam at a central power plant and delivers it by underground pipes to about 500 buildings."
-            So we can assume that there are at least 500 buildings connected to the steam loop.
-            Whether additional buildings are connected, or could be connected in the future, is unknown.
+            #### Limitations
             
-           #### Software:
+            <style>
+                .quote {
+                    border-left: 3px solid #808080;
+                    padding-left: 10px;
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                    color: #666;
+                }
+            </style>
+           Buildings were filtered to only include those in Philadelphia County and within 1000m of the steam loop. The counts are estimated (see Disclaimer). It is unknown to what extent buildings may draw from the steam loop (perhaps more or less than the chosen distance). According to a <a href="https://www.inquirer.com/business/philadelphia-steam-plant-vicinity-veolia-dicroce-20200204.html" target="_blank">2020 Inquirer article</a>, 
+            <div class="quote">The Center City district heating system produces steam at a central power plant and delivers it by underground pipes to about 500 buildings.
+            </div>
+            So we can assume that there are at least 500 buildings connected to the steam loop. Whether additional buildings are connected, or could be connected in the future, is unknown. 
+            
+            #### Software
             - [GeoPandas](https://geopandas.org/)
             - [Folium](https://python-visualization.github.io/folium/)
             - [Streamlit](https://streamlit.io/)
@@ -350,6 +402,7 @@ def add_source_info_expanders():
             - [QGIS](https://qgis.org/en/site/)
             - [ChatGPT (Mar 14 version)](https://openai.com/blog/chatgpt)
             """, unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()
