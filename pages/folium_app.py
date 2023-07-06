@@ -86,7 +86,7 @@ def main():
     m = add_custom_markers(m, marker_data, "Cogeneration Plants")
 
     # Add layer control to the map
-    folium.LayerControl(collapsed=False).add_to(m)
+    folium.LayerControl(collapsed=True).add_to(m)
     
     # Display the map
     folium_static(m)
