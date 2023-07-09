@@ -14,6 +14,7 @@ from io import BytesIO
 # Fetch API key and URLs from Streamlit secrets
 MAPBOX_API_KEY = st.secrets["mapbox"]["api_key"]
 PNG_WIKI_COGEN = st.secrets["aws"]["cogeneration_png"]
+PNG_DISTRICT_ENERGY = st.secrets["aws"]["district_energy_png"]
 JPG_EDISON = st.secrets["aws"]["edison_plant_jpg"]
 JPG_GRAYS_FERRY = st.secrets["aws"]["grays_ferry_jpg"]
 
@@ -363,9 +364,15 @@ def add_source_info_expanders():
         -  [Willow Street Steam Generation Plant - Abandoned America](https://www.abandonedamerica.us/willow-street-steam-plant)
         -  [Center City steam loop a ‘diamond in the rough,’ - Philadelphia Inquirer article](https://www.inquirer.com/business/philadelphia-steam-plant-vicinity-veolia-dicroce-20200204.html)
         """)
-        
+
+        # District Energy Image
+        st.image(PNG_DISTRICT_ENERGY, use_column_width=True)
+        st.markdown("<div style='text-align: center; color: grey; font-size: small;'>Visual depiction of a District Energy Supply</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; color: grey; font-size: small;'>Image Source: <a href='https://www.youtube.com/watch?v=7BznKyEb0bc&t=60s'>International District Energy Association (YouTube)</a></div>", unsafe_allow_html=True)
+
+
         # Wikipedia Cogeneration Image
-        st.image(PNG_WIKI_COGEN, use_column_width=True) # type: ignore
+        st.image(PNG_WIKI_COGEN, use_column_width=True)
         st.markdown("<div style='text-align: center; color: grey; font-size: small;'>Image Source: <a href='https://en.wikipedia.org/wiki/Cogeneration'>Wikipedia Cogeneration</a></div>", unsafe_allow_html=True)
 
     with st.expander("📜 Source Information", expanded=False):
@@ -379,20 +386,10 @@ def add_source_info_expanders():
             - [Philadelphia Neighborhoods, Azavea](https://github.com/azavea/geo-data/blob/master/Neighborhoods_Philadelphia/Neighborhoods_Philadelphia.geojson)
             
             #### Limitations
-            
-            <style>
-                .quote {
-                    border-left: 3px solid #808080;
-                    padding-left: 10px;
-                    margin-top: 20px;
-                    margin-bottom: 20px;
-                    color: #666;
-                }
-            </style>
-           Buildings were filtered to only include those in Philadelphia County and within 1000m of the steam loop. The counts are estimated (see Disclaimer). It is unknown to what extent buildings may draw from the steam loop (perhaps more or less than the chosen distance). According to a <a href="https://www.inquirer.com/business/philadelphia-steam-plant-vicinity-veolia-dicroce-20200204.html" target="_blank">2020 Inquirer article</a>, 
-            <div class="quote">The Center City district heating system produces steam at a central power plant and delivers it by underground pipes to about 500 buildings.
-            </div>
-            So we can assume that there are at least 500 buildings connected to the steam loop. Whether additional buildings are connected, or could be connected in the future, is unknown. 
+           Buildings were filtered to only include those in Philadelphia County and within 1000 meters of the steam loop and counts are estimated (see Disclaimer). It is unknown to what specific extent or general area buildings could connect to the system. 1000 meters is a generalized estimate. According to a <a href="https://www.inquirer.com/business/philadelphia-steam-plant-vicinity-veolia-dicroce-20200204.html" target="_blank">2020 Inquirer article</a>, 
+            The Center City district heating system produces steam at a central power plant and delivers it by underground pipes to about 500 buildings.
+                    
+            The steam loop's current energy capacity is unknown. Whether additional buildings are connected, or could be connected in the future, is also unknown. 
             
             #### Software
             - [GeoPandas](https://geopandas.org/)
