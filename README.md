@@ -2,7 +2,7 @@
 
 This Streamlit app  visualizes the Philadelphia Steam Loop system and its intersection with nearby building footprints and neighborhood boundaries in the city. Additional research on Combined Heat and Power (Cogeneration) energy  is included.
 
-- The app levers [GeoPandas](https://geopandas.org/), [Branca](https://python-visualization.github.io/branca/), 
+- The app leverages [GeoPandas](https://geopandas.org/), [Branca](https://python-visualization.github.io/branca/), 
 [Streamlit-Folium](https://github.com/randyzwitch/streamlit-folium), and [Streamlit](https://streamlit.io/). It is hosted on [Streamlit Community Cloud](https://streamlit.io/cloud).
 - The application uses [Mapbox API](https://www.mapbox.com/) for the satellite basemap in Folium
 - Source data URLs are loaded using [Streamlit Secret Management](https://docs.streamlit.io/streamlit-community-cloud/get-started/deploy-an-app/connect-to-data-sources/secrets-management)
