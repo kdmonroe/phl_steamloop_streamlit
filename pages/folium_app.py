@@ -349,13 +349,10 @@ def add_source_info_expanders():
     # Create another expander for the CHP information, default as expanded
     with st.expander("💡 More about Combined Heat and Power (CHP)", expanded=True):
         st.markdown("""
-        Combined Heat and Power (CHP), also known as cogeneration, is a highly efficient method of generating electricity and thermal energy from the same energy source. Basically, it's producing two types of energy in one go. What makes it cool is that it's a type of distributed generation, which means it generates power right where it's needed, rather than at a large plant somewhere else.
+        District energy systems are characterized by one or more central plants producing hot water, steam, and/or chilled water, which then flows through a network of insulated pipes to provide hot water, space heating, and/or air conditioning for nearby buildings. District energy systems serve a variety of end-use markets, including downtowns (central business districts), college and university campuses, hospitals and healthcare facilities, airports, military bases, and industrial complexes. By combining loads for multiple buildings, district energy systems create economies of scale that help reduce energy costs and enable the use
+        of high-efficiency technologies such as combined heat and power (CHP).
 
-        Cogeneration captures the heat that would typically be wasted in power generation, instead using it for heating and cooling. Thus, it is highly efficient and versatile. It can use a variety of fuels, including both fossil and renewable ones. For decades, CHP has powered of large industrial, commercial, and institutional settings, as well as utility circles.
-        
-        CHP systems can achieve efficiencies of 65-75%, a substantial improvement over the national average of about 50% when these services are provided separately.
-
-        Source: [U.S. Department of Energy](https://www.energy.gov/eere/iedo/combined-heat-and-power-basics)
+        Source: [U.S. Department of Energy, Combined Heat and Power Technology Fact Sheet Series](https://www.energy.gov/sites/prod/files/2020/10/f79/District%20Energy%20Technology%20Fact%20Sheet_9.25.20_compliant.pdf)
         
         ##### More on Philadelphia's Steam Loop
         -  [Vicinity Energy (Owner)](https://www.vicinityenergy.us/locations/philadelphia)
