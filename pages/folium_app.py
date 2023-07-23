@@ -349,8 +349,9 @@ def add_source_info_expanders():
     # Create another expander for the CHP information, default as expanded
     with st.expander("💡 More about Combined Heat and Power (CHP)", expanded=True):
         st.markdown("""
-        District energy systems are characterized by one or more central plants producing hot water, steam, and/or chilled water, which then flows through a network of insulated pipes to provide hot water, space heating, and/or air conditioning for nearby buildings. District energy systems serve a variety of end-use markets, including downtowns (central business districts), college and university campuses, hospitals and healthcare facilities, airports, military bases, and industrial complexes. By combining loads for multiple buildings, district energy systems create economies of scale that help reduce energy costs and enable the use
-        of high-efficiency technologies such as combined heat and power (CHP).
+        District energy systems are characterized by one or more central plants producing hot water, steam, and/or chilled water, which then flows through a network of insulated pipes to provide hot water, space heating, and/or air conditioning for nearby buildings. District energy systems serve a variety of end-use markets, including downtowns (central business districts), college and university campuses, hospitals and healthcare facilities, airports, military bases, and industrial complexes. 
+        
+        By combining loads for multiple buildings, district energy systems create economies of scale that help reduce energy costs and enable the use of high-efficiency technologies such as combined heat and power (CHP).
 
         Source: [U.S. Department of Energy, Combined Heat and Power Technology Fact Sheet Series](https://www.energy.gov/sites/prod/files/2020/10/f79/District%20Energy%20Technology%20Fact%20Sheet_9.25.20_compliant.pdf)
         
