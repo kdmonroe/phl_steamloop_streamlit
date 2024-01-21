@@ -1,1 +1,0 @@
-web: streamlit run pages/folium_app.py
