@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import folium
 from folium.raster_layers import TileLayer
@@ -12,6 +13,7 @@ import numpy as np
 from io import BytesIO
 
 # Fetch API key and URLs from Streamlit secrets
+PORT = os.getenv('PORT', 8501)
 MAPBOX_API_KEY = st.secrets["mapbox"]["api_key"]
 PNG_WIKI_COGEN = st.secrets["aws"]["cogeneration_png"]
 PNG_DISTRICT_ENERGY = st.secrets["aws"]["district_energy_png"]
@@ -399,5 +401,6 @@ def add_source_info_expanders():
             """, unsafe_allow_html=True)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    st.set_option('server.port', PORT)
+    st.set_option('server.address', '0.0.0.0')
