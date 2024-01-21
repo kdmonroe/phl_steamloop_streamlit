@@ -13,15 +13,15 @@ import numpy as np
 from io import BytesIO
 
 # Fetch API key and URLs from Streamlit secrets
-MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
-PNG_WIKI_COGEN = os.getenv("PNG_WIKI_COGEN")
-PNG_DISTRICT_ENERGY = os.getenv("PNG_DISTRICT_ENERGY")
-JPG_EDISON = os.getenv("JPG_EDISON")
-JPG_GRAYS_FERRY = os.getenv("JPG_GRAYS_FERRY")
+MAPBOX_API_KEY = os.getenv("api_key")
+PNG_WIKI_COGEN = os.getenv("benefits_png")
+PNG_DISTRICT_ENERGY = os.getenv("district_energy_png")
+JPG_EDISON = os.getenv("edison_plant_jpg")
+JPG_GRAYS_FERRY = os.getenv("grays_ferry_jpg")
 
-GEOJSON_STEAM_LOOP = os.getenv("GEOJSON_STEAM_LOOP")
-GEOJSON_PHL_BLDGS = os.getenv("GEOJSON_PHL_BLDGS")
-GEOJSON_PHL_NBRHOODS = os.getenv("GEOJSON_PHL_NBRHOODS")
+GEOJSON_STEAM_LOOP = os.getenv("steamloop_geojson")
+GEOJSON_PHL_BLDGS = os.getenv("phl_bldg_geojson")
+GEOJSON_PHL_NBRHOODS = os.getenv("phl_nbrhoods_geojson")
 
 def main():
     """
